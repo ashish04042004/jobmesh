@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: jobmesh
+    runtime: docker
+    plan: free
+    dockerfilePath: ./deploy/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: jobmesh-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      - key: EMBEDDED_WORKERS
+        value: "1"
+      - key: WORKER_CONCURRENCY
+        value: "2"
+      # The free Key Value instance has 25 MB, so finished BullMQ entries are trimmed sooner.
+      - key: JOB_KEEP_COMPLETED_SEC
+        value: "600"
+      - key: JOB_KEEP_FAILED_SEC
+        value: "86400"
+
+  - type: keyvalue
+    name: jobmesh-redis
+    plan: free
+    maxmemoryPolicy: noeviction
+    ipAllowList: []

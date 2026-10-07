@@ -88,6 +88,31 @@ curl -s localhost:4000/api/jobs -H "Authorization: Bearer $TOKEN" -H 'Content-Ty
 curl -s localhost:4000/api/stats -H "Authorization: Bearer $TOKEN"
 ```
 
+## Free deployment (Render + MongoDB Atlas)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/ashish04042004/jobmesh)
+
+Free tiers usually allow one web service, so `deploy/Dockerfile` builds a single image:
+
+- `deploy/standalone.js` runs the API and an embedded worker as two processes.
+- Express serves the built dashboard on the same origin.
+- `render.yaml` creates that web service plus a free Render Key Value (Redis) instance with `noeviction`, and generates `JWT_SECRET`.
+
+To deploy:
+
+1. Create a free **M0** cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register).
+   - Add a database user.
+   - Allow access from `0.0.0.0/0`, because Render's free plan has no static IPs.
+   - Copy the connection string and add a database name, e.g. `.../jobmesh?retryWrites=true&w=majority`.
+2. Click **Deploy to Render**, sign in with GitHub, and paste the string into `MONGO_URI` when asked.
+3. Open `https://<service-name>.onrender.com` once the build finishes.
+
+Free-tier trade-offs:
+
+- The service sleeps after 15 minutes without traffic. The first request after that takes about a minute while it wakes up.
+- Uploaded files and generated artifacts live on ephemeral disk and are gone after a restart. Job records and results stay in MongoDB.
+- The instance has about 0.1 CPU, so jobs run much slower than on a laptop.
+
 ## API
 
 | Method | Path | Description |
