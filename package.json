@@ -1,0 +1,27 @@
+{
+  "name": "jobmesh",
+  "version": "1.0.0",
+  "private": true,
+  "description": "JobMesh - distributed asynchronous job processing platform (Node.js, Express, MongoDB, Redis, BullMQ)",
+  "license": "MIT",
+  "workspaces": [
+    "shared",
+    "backend",
+    "worker"
+  ],
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "dev:api": "npm run dev -w backend",
+    "dev:worker": "npm run dev -w worker",
+    "start:api": "npm start -w backend",
+    "start:worker": "npm start -w worker",
+    "test": "npm test -w backend && npm test -w worker",
+    "test:e2e": "node --test \"tests/e2e/*.test.js\"",
+    "infra:up": "docker compose up -d mongodb redis",
+    "stack:up": "docker compose up -d --build",
+    "stack:down": "docker compose down",
+    "bench:workers": "node load-tests/benchmark-workers.js"
+  }
+}

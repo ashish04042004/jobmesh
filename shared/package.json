@@ -1,0 +1,13 @@
+{
+  "name": "@jobmesh/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Models, constants and infrastructure helpers shared by the JobMesh API and workers",
+  "main": "src/index.js",
+  "dependencies": {
+    "bullmq": "^6.3.11",
+    "ioredis": "^6.0.0",
+    "mongoose": "^9.11.0",
+    "pino": "^10.4.0"
+  }
+}
