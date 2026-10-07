@@ -6,7 +6,7 @@ export const JOB_TYPE_LABELS = {
 
 export const TERMINAL = new Set(['COMPLETED', 'FAILED', 'CANCELLED']);
 
-const numberFmt = new Intl.NumberFormat();
+const numberFmt = new Intl.NumberFormat('en-US');
 export const formatNumber = (n) => (n == null ? '—' : numberFmt.format(n));
 
 const currencyFmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
