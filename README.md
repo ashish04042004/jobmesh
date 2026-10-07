@@ -8,9 +8,11 @@ The API accepts a job, stores it, puts a reference on a Redis-backed queue and r
 A pool of independent worker processes pulls jobs off the queue, runs them, and writes results back to MongoDB.
 Workers scale horizontally (`docker compose up --scale worker=N`) and can crash at any point without losing or double-applying work.
 
+![Dashboard](docs/screenshots/dashboard.png)
+
 ```text
               ┌──────────────┐
-              │    Client    │  (React dashboard: coming next)
+              │ React (Vite) │  served by nginx, /api proxied to the API
               └──────┬───────┘
                      │ REST + JWT
                      ▼
@@ -42,6 +44,11 @@ Workers scale horizontally (`docker compose up --scale worker=N`) and can crash 
 - **Redis caching** of job reads (cache-aside, 60s TTL, invalidated on every state change) with an `X-Cache: HIT|MISS` header.
 - **Rate limiting:** per-user sliding-window counter, implemented as an atomic Redis Lua script. Bulk submissions are charged per job.
 - **Cursor pagination, compound indexes, Dockerized deployment, health and readiness probes.**
+- **React dashboard:**
+  - Live stats, queue depth and worker heartbeats.
+  - Job submission, including file upload, bulk copies and fault injection.
+  - Filterable job table and per-job pages with progress, attempts and the worker that ran it.
+  - Type-specific results (charts, image previews, artifact downloads), plus cancel, retry and delete actions.
 
 ## Quick start
 
@@ -49,19 +56,25 @@ Prerequisites: Docker and Node.js 22.9+.
 
 ```bash
 npm install
-docker compose up -d --build          # mongodb, redis, api, 3 workers
-curl http://localhost:4000/ready      # {"mongo":true,"redis":true}
+docker compose up -d --build          # mongodb, redis, api, 3 workers, dashboard
+open http://localhost:8080            # dashboard (API at http://localhost:4000)
 npm run test:e2e                      # end-to-end checks against the running stack
 ```
 
-To run the API and worker on the host instead of in containers (for development with `--watch`):
+To run the services on the host instead of in containers (for development with hot reload):
 
 ```bash
 cp .env.example .env
+npm install --prefix frontend
 npm run infra:up                      # only mongodb + redis in Docker
 npm run dev:api                       # terminal 1
 npm run dev:worker                    # terminal 2 (start several for a pool)
+npm run dev:web                       # terminal 3, http://localhost:5173 (proxies /api)
 ```
+
+| Job details: report | Job details: image |
+|---|---|
+| ![Report job](docs/screenshots/report-job.png) | ![Image job](docs/screenshots/image-job.png) |
 
 ### Try it
 
@@ -226,11 +239,12 @@ On this machine, the useful scaling limit is roughly the physical core count. Go
 shared/     Mongoose models, constants, Redis/BullMQ/Mongo factories (used by API and workers)
 backend/    Express API: routes → controllers → services; Redis adapters; Jest + Supertest tests
 worker/     BullMQ worker: idempotent job handler, per-job context, processors; Jest tests
+frontend/   React + Vite dashboard; nginx image proxies /api to the backend
 tests/e2e/  End-to-end tests (node:test) against the running stack
 load-tests/ k6 API load test and worker-scaling benchmark
 ```
 
 ## Roadmap
 
-- React dashboard: overview, submission form, job table, job details with live progress.
+- Server-sent events instead of polling for live job progress.
 - Transactional outbox for submissions, and Prometheus metrics.
