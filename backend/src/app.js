@@ -1,3 +1,4 @@
+const path = require('node:path');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
@@ -25,7 +26,8 @@ function createApp({ config, logger, queueGateway, cache, rateLimitStore }) {
   app.disable('x-powered-by');
   app.set('trust proxy', config.trustProxy);
 
-  app.use(helmet());
+  // The dashboard previews job images through blob: URLs.
+  app.use(helmet({ contentSecurityPolicy: { directives: { 'img-src': ["'self'", 'data:', 'blob:'] } } }));
   app.use(cors({ origin: config.corsOrigins, exposedHeaders: ['X-Cache', 'Location', 'RateLimit-Remaining', 'Retry-After'] }));
   app.use(express.json({ limit: '100kb' }));
   if (logger) {
@@ -58,6 +60,15 @@ function createApp({ config, logger, queueGateway, cache, rateLimitStore }) {
   app.use('/api/jobs', protectedApi, jobRoutes({ ...services, rateLimit, config }));
   app.use('/api/files', protectedApi, fileRoutes({ ...services, config }));
   app.use('/api/stats', protectedApi, statsRoutes(services));
+
+  if (config.staticDir) {
+    const indexHtml = path.join(config.staticDir, 'index.html');
+    app.use(express.static(config.staticDir, { index: false, maxAge: '1h' }));
+    app.use((req, res, next) => {
+      if (req.method !== 'GET' || req.path.startsWith('/api/')) return next();
+      res.sendFile(indexHtml);
+    });
+  }
 
   app.use(notFoundHandler);
   app.use(createErrorHandler({ logger, exposeInternalErrors: config.env !== 'production' }));

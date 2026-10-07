@@ -21,6 +21,7 @@ const config = {
     statsTtlSec: envInt('CACHE_STATS_TTL_SEC', 5),
   },
   uploadMaxBytes: envInt('UPLOAD_MAX_BYTES', 20 * 1024 * 1024),
+  staticDir: envString('STATIC_DIR', ''),
 };
 
 if (config.env === 'production' && (config.jwtSecret === DEV_JWT_SECRET || config.jwtSecret.length < 32)) {
