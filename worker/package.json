@@ -1,0 +1,26 @@
+{
+  "name": "@jobmesh/worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "JobMesh worker process (job consumer)",
+  "main": "src/worker.js",
+  "scripts": {
+    "start": "node src/worker.js",
+    "dev": "node --watch --env-file-if-exists=../.env src/worker.js",
+    "test": "jest --runInBand"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testTimeout": 30000,
+    "globalSetup": "<rootDir>/tests/globalSetup.js",
+    "globalTeardown": "<rootDir>/tests/globalTeardown.js"
+  },
+  "dependencies": {
+    "csv-parse": "^7.0.3",
+    "sharp": "^0.35.5"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "mongodb-memory-server": "^11.3.0"
+  }
+}
