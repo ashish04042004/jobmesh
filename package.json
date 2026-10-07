@@ -15,6 +15,7 @@
   "scripts": {
     "dev:api": "npm run dev -w backend",
     "dev:worker": "npm run dev -w worker",
+    "dev:web": "npm --prefix frontend run dev",
     "start:api": "npm start -w backend",
     "start:worker": "npm start -w worker",
     "test": "npm test -w backend && npm test -w worker",
