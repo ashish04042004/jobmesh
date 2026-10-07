@@ -1,0 +1,8 @@
+**/node_modules
+**/tests
+**/coverage
+.git
+.env
+data
+load-tests
+*.md

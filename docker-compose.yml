@@ -1,0 +1,91 @@
+name: jobmesh
+
+services:
+  mongodb:
+    image: mongo:7
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    # AOF persistence so queued jobs survive a Redis restart; BullMQ requires
+    # noeviction, otherwise Redis could silently drop queue keys under memory pressure.
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: jobmesh-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      MONGO_URI: mongodb://mongodb:27017/jobmesh
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-local-compose-secret-change-me-0123456789}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      JOB_ATTEMPTS: ${JOB_ATTEMPTS:-3}
+      JOB_BACKOFF_MS: ${JOB_BACKOFF_MS:-1000}
+      RATE_LIMIT_API_PER_MIN: ${RATE_LIMIT_API_PER_MIN:-600}
+      RATE_LIMIT_JOBS_PER_MIN: ${RATE_LIMIT_JOBS_PER_MIN:-100}
+      RATE_LIMIT_AUTH_PER_MIN: ${RATE_LIMIT_AUTH_PER_MIN:-20}
+    ports:
+      - "4000:4000"
+    volumes:
+      - app-data:/data
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+    image: jobmesh-worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      MONGO_URI: mongodb://mongodb:27017/jobmesh
+      REDIS_URL: redis://redis:6379
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-2}
+    volumes:
+      - app-data:/data
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Scale with: docker compose up -d --scale worker=N
+    deploy:
+      replicas: 3
+    # Time for in-flight jobs to finish after SIGTERM before Docker kills the process.
+    stop_grace_period: 30s
+
+volumes:
+  mongo-data:
+  redis-data:
+  app-data:

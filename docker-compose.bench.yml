@@ -1,0 +1,13 @@
+# Overlay for load tests: lifts rate limits so the benchmark measures the
+# system's capacity rather than its abuse protection.
+#   docker compose -f docker-compose.yml -f docker-compose.bench.yml up -d --build
+services:
+  backend:
+    environment:
+      LOG_LEVEL: warn
+      RATE_LIMIT_API_PER_MIN: 10000000
+      RATE_LIMIT_JOBS_PER_MIN: 10000000
+      RATE_LIMIT_AUTH_PER_MIN: 100000
+  worker:
+    environment:
+      LOG_LEVEL: warn
