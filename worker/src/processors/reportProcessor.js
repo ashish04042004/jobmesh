@@ -3,7 +3,22 @@ const { FILE_CATEGORY } = require('@jobmesh/shared');
 const { createRandom } = require('../utils/random');
 
 const CHUNK_SIZE = 20_000;
-const REGIONS = ['North America', 'Europe', 'Asia Pacific', 'Latin America', 'Middle East & Africa'];
+const REGIONS = [
+  { name: 'North America', weight: 0.34 },
+  { name: 'Europe', weight: 0.27 },
+  { name: 'Asia Pacific', weight: 0.22 },
+  { name: 'Latin America', weight: 0.1 },
+  { name: 'Middle East & Africa', weight: 0.07 },
+];
+
+function pickWeighted(rng, items) {
+  let r = rng.next();
+  for (const item of items) {
+    r -= item.weight;
+    if (r <= 0) return item;
+  }
+  return items.at(-1);
+}
 // Prices in cents so revenue sums stay exact.
 const PRODUCTS = [
   { name: 'Laptop Pro 14', category: 'Electronics', priceCents: 129_900 },
@@ -47,7 +62,7 @@ async function processReport(job, ctx) {
     revenueCents += cents;
     unitsSold += quantity;
     daily[rng.int(0, daysInMonth - 1)] += cents;
-    addTo(byRegion, rng.pick(REGIONS), cents);
+    addTo(byRegion, pickWeighted(rng, REGIONS).name, cents);
     addTo(byCategory, product.category, cents);
     addTo(byProduct, product.name, cents);
 
